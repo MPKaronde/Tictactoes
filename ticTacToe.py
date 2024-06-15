@@ -171,10 +171,6 @@ def playerTurn():
     board[xcord][ycord].changeSpace(1)
 
 
-def computerTurn():
-    print("insert computer turn here")
-
-
 # game runner Note - will need to initgame before running runGame
 def runGame():
 
@@ -193,12 +189,6 @@ def runGame():
     print(retWinner())
 
 
-# Code running section
-initGame()
-runGame()
-
-
-"""
 def computerTurn():
     # The x and y cordinate that the computer will put down
     xCord = 0
@@ -248,22 +238,23 @@ def computerTurn():
                         if board[xCheck][yCheck].returnSpace() == 2:
                             moves[x][y] = moves[x][y] + 1
 
-            if board[x][y] == 1 or board[x][y] == 2:
-                moves[x][y] = 0
-
     x = 0
     y = 0
     largest = 0
 
     for y in range(3):
         for x in range(3):
-            print(str(largest) + ", " + str(x) + ", " + str(y))
-            if moves[x][y] > largest:
-                xCord = x
-                yCord = y
-                largest = moves[x][y]
+            if board[x][y].returnSpace() != 1 and board[x][y].returnSpace() != 2:
+                if moves[x][y] > largest:
+                    xCord = x
+                    yCord = y
+                    largest = moves[x][y]
 
     # end of the function
     print(str(xCord) + ", " + str(yCord))
     board[xCord][yCord].changeSpace(2)
-"""
+
+
+# Code running section
+initGame()
+runGame()
