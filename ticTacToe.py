@@ -1,8 +1,8 @@
 import numpy as np
+import copy
+
 
 # Player is x(1) and computer is O(2)
-
-
 class space:
     spaceType = 0  # 0 = empty, 1 = X, 2 = O
 
@@ -98,6 +98,52 @@ def hasPlayerWon(player):
     return False
 
 
+# combine with hasPlayerWon later
+def hasTheoreticalPlayerWon(player, g):
+
+    spaceValue = player
+    grid = g
+
+    # check if won in x direction
+    for y in range(3):
+        if (
+            g[0][y].returnSpace()
+            == spaceValue & g[1][y].returnSpace()
+            == spaceValue & g[2][y].returnSpace()
+            == spaceValue
+        ):
+            return True
+
+    # check if won in y direction
+    for x in range(3):
+        if (
+            g[x][0].returnSpace()
+            == spaceValue & g[x][1].returnSpace()
+            == spaceValue & g[x][2].returnSpace()
+            == spaceValue
+        ):
+            return True
+
+    # check if won diagonally
+    if (
+        g[0][0].returnSpace()
+        == spaceValue & g[1][1].returnSpace()
+        == spaceValue & g[2][2].returnSpace()
+        == spaceValue
+    ):
+        return True
+
+    if (
+        g[2][0].returnSpace()
+        == spaceValue & g[1][1].returnSpace()
+        == spaceValue & g[0][2].returnSpace()
+        == spaceValue
+    ):
+        return True
+
+    return False
+
+
 # returns 0 if game not won, 1 if X has won, 2 if O has won
 def isGameWon():
     if hasPlayerWon(1):
@@ -109,16 +155,19 @@ def isGameWon():
 
 # returns winner in string form
 def retWinner():
-    winner = isGameWon()
+    winner = isGameOver()
 
     if winner == 1:
         return "X has won"
     elif winner == 2:
         return "O has won"
+    elif winner == 3:
+        return "tie, Good Game!"
     else:
         return ""
 
 
+# runs the players turn
 def playerTurn():
 
     validMoove = False
@@ -171,26 +220,100 @@ def playerTurn():
     board[xcord][ycord].changeSpace(1)
 
 
+# return 0 if no, 1 if one won, 2 if computer won, 3 if stalemate
+def isGameOver():
+
+    winner = isGameWon()
+
+    if winner != 0:
+        return winner
+
+    for y in range(3):
+        for x in range(3):
+            if board[x][y].returnSpace() == 0:
+                return 0
+
+    return 3
+
+
 # game runner Note - will need to initgame before running runGame
 def runGame():
 
-    print(printBoard())
+    replay = True
 
-    # Game loop
-    while isGameWon() == 0:
-        # Player's move
-        playerTurn()
+    while replay:
+        # Game loop
         print(printBoard())
+        while isGameOver() == 0:
+            # Player's move
+            playerTurn()
+            print(printBoard())
 
-        # Computer turn
-        computerTurn()
-        print(printBoard())
+            # Computer turn
+            computerTurn()
+            print(printBoard())
 
-    print(retWinner())
+        print(retWinner())
+
+        play = input("do you want another game? y/n: ")
+        if play == "n" or play == "N":
+            replay = False
+        if play == "y" or play == "Y":
+            initGame()
 
 
-def computerTurn():
-    # The x and y cordinate that the computer will put down
+# uses hasPlayerWon to find if there is any move that would allow a player to win
+def finalMove(player):
+
+    boardCopy = copy.deepcopy(board)
+    ret = np.array([0, 0, 0])  # player, x cord, y cord
+
+    for y in range(3):
+        for x in range(3):
+            boardCopy = copy.deepcopy(board)
+
+            if boardCopy[x][y].returnSpace() == 0:
+
+                boardCopy[x][y].changeSpace(1)
+                if hasTheoreticalPlayerWon(1, boardCopy) and ret[0] != 2:
+                    ret = np.array([1, x, y])
+
+                boardCopy[x][y].changeSpace(2)
+                if hasTheoreticalPlayerWon(2, boardCopy):
+                    ret = np.array([2, x, y])
+
+    return ret
+
+
+# returns -1, -1 if no winning move and coordinates if there is a winning move
+def winningMove():
+
+    ret = np.array([-1, -1])
+    b = finalMove(2)
+
+    if b[0] == 2:
+        ret[0] = b[1]
+        ret[1] = b[2]
+
+    return ret
+
+
+# returns -1, -1 if no move required to block a win, coordinates if blocking move is neccesary
+def blockingMove():
+
+    ret = np.array([-1, -1])
+    b = finalMove(1)
+
+    if b[0] == 1:
+        ret[0] = b[1]
+        ret[1] = b[2]
+
+    return ret
+
+
+# returns best weighted offensive turn
+def offense():
+
     xCord = 0
     yCord = 0
 
@@ -250,9 +373,34 @@ def computerTurn():
                     yCord = y
                     largest = moves[x][y]
 
-    # end of the function
-    print(str(xCord) + ", " + str(yCord))
-    board[xCord][yCord].changeSpace(2)
+    ret = np.array([xCord, yCord])
+    return ret
+
+
+# the computers turn: evaluates each type of turn and decides which is the best
+def computerTurn():
+
+    # first do the winning move if its a winning move
+    coordinates = winningMove()
+    if coordinates[0] != -1:
+        x = coordinates[0]
+        y = coordinates[1]
+        board[x][y].changeSpace(2)
+        return
+
+    # if no winning move available check if a block is needed to stop oppnent from winning
+    coordinates = blockingMove()
+    if coordinates[0] != -1:
+        x = coordinates[0]
+        y = coordinates[1]
+        board[x][y].changeSpace(2)
+        return
+
+    # if neither of the other two ran, do an offensive move
+    coordinates = offense()
+    x = coordinates[0]
+    y = coordinates[1]
+    board[x][y].changeSpace(2)
 
 
 # Code running section
